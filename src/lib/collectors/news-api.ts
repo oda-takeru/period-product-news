@@ -1,6 +1,7 @@
 import axios from "axios";
 import { prisma } from "../db";
 import { SEARCH_KEYWORDS } from "../constants";
+import { translateArticle } from "../translate";
 
 interface NewsAPIArticle {
   title: string;
@@ -123,13 +124,32 @@ export async function collectFromNewsAPI(): Promise<number> {
           const country = countries[0];
 
           try {
-            await prisma.article.upsert({
+            // 既存記事はスキップ
+            const existing = await prisma.article.findUnique({
               where: { url: article.url },
-              update: {},
-              create: {
-                title: article.title,
-                summary: article.description || article.title,
-                content: article.content || article.description || "",
+              select: { id: true },
+            });
+            if (existing) continue;
+
+            // 新規記事のみ翻訳して保存
+            const articleTitle = article.title;
+            const articleSummary = article.description || article.title;
+            const articleContent = article.content || article.description || "";
+
+            const { titleJa, summaryJa, contentJa } = await translateArticle(
+              articleTitle,
+              articleSummary,
+              articleContent
+            );
+
+            await prisma.article.create({
+              data: {
+                title: articleTitle,
+                summary: articleSummary,
+                content: articleContent,
+                titleJa,
+                summaryJa,
+                contentJa,
                 url: article.url,
                 imageUrl: article.urlToImage,
                 country,
@@ -142,7 +162,7 @@ export async function collectFromNewsAPI(): Promise<number> {
             });
             totalCollected++;
           } catch {
-            // duplicate URL, skip
+            // duplicate URL or other error, skip
           }
         }
 

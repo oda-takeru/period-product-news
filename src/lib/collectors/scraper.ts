@@ -2,6 +2,7 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 import { prisma } from "../db";
 import { SCRAPE_TARGETS } from "../constants";
+import { translateArticle } from "../translate";
 
 interface ScrapedArticle {
   title: string;
@@ -105,13 +106,28 @@ export async function collectFromScraping(): Promise<number> {
 
     for (const article of articles) {
       try {
-        await prisma.article.upsert({
+        // 既存記事はスキップ
+        const existing = await prisma.article.findUnique({
           where: { url: article.url },
-          update: {},
-          create: {
+          select: { id: true },
+        });
+        if (existing) continue;
+
+        // 新規記事のみ翻訳して保存
+        const { titleJa, summaryJa, contentJa } = await translateArticle(
+          article.title,
+          article.summary,
+          article.content
+        );
+
+        await prisma.article.create({
+          data: {
             title: article.title,
             summary: article.summary,
             content: article.content,
+            titleJa,
+            summaryJa,
+            contentJa,
             url: article.url,
             imageUrl: article.imageUrl,
             country: article.country,
@@ -124,7 +140,7 @@ export async function collectFromScraping(): Promise<number> {
         });
         totalCollected++;
       } catch {
-        // duplicate URL, skip
+        // duplicate URL or other error, skip
       }
     }
 

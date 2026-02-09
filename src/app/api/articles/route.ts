@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
     where.OR = [
       { title: { contains: q } },
       { summary: { contains: q } },
+      { titleJa: { contains: q } },
+      { summaryJa: { contains: q } },
       { brand: { contains: q } },
       { company: { contains: q } },
     ];

@@ -13,6 +13,9 @@ model Article {
   title       String
   summary     String
   content     String
+  titleJa     String?
+  summaryJa   String?
+  contentJa   String?
   url         String   @unique
   imageUrl    String?
   country     String

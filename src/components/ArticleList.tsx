@@ -6,6 +6,8 @@ interface Article {
   id: string;
   title: string;
   summary: string;
+  titleJa?: string | null;
+  summaryJa?: string | null;
   url: string;
   imageUrl: string | null;
   country: string;

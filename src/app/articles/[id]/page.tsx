@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import FavoriteButton from "@/components/FavoriteButton";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useLanguageContext } from "@/contexts/LanguageContext";
+import LanguageToggle from "@/components/LanguageToggle";
 import { COUNTRIES, COUNTRY_FLAGS, CATEGORIES } from "@/lib/constants";
 
 interface Article {
@@ -12,6 +14,9 @@ interface Article {
   title: string;
   summary: string;
   content: string;
+  titleJa?: string | null;
+  summaryJa?: string | null;
+  contentJa?: string | null;
   url: string;
   imageUrl: string | null;
   country: string;
@@ -27,6 +32,7 @@ export default function ArticleDetailPage() {
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
   const { isFavorite, toggleFavorite } = useFavorites();
+  const { language, toggleLanguage } = useLanguageContext();
 
   useEffect(() => {
     async function fetchArticle() {
@@ -68,6 +74,20 @@ export default function ArticleDetailPage() {
       </div>
     );
   }
+
+  const displayTitle =
+    language === "ja" && article.titleJa ? article.titleJa : article.title;
+  const displaySummary =
+    language === "ja" && article.summaryJa
+      ? article.summaryJa
+      : article.summary;
+  const displayContent =
+    language === "ja" && article.contentJa
+      ? article.contentJa
+      : article.content;
+  const isTranslated =
+    language === "ja" &&
+    (article.titleJa || article.summaryJa || article.contentJa);
 
   const date = new Date(article.publishedAt).toLocaleDateString("ja-JP", {
     year: "numeric",
@@ -137,9 +157,19 @@ export default function ArticleDetailPage() {
 
       {/* Title */}
       <div className="flex items-start justify-between gap-4 mb-4">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
-          {article.title}
-        </h1>
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-2">
+            {isTranslated && (
+              <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                自動翻訳
+              </span>
+            )}
+            <LanguageToggle language={language} onToggle={toggleLanguage} />
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 leading-tight">
+            {displayTitle}
+          </h1>
+        </div>
         <FavoriteButton
           isFavorite={isFavorite(article.id)}
           onToggle={() => toggleFavorite(article.id)}
@@ -151,10 +181,10 @@ export default function ArticleDetailPage() {
       {/* Content */}
       <div className="prose prose-gray max-w-none">
         <p className="text-lg text-gray-600 leading-relaxed mb-6">
-          {article.summary}
+          {displaySummary}
         </p>
         <div className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-          {article.content}
+          {displayContent}
         </div>
       </div>
 

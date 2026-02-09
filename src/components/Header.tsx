@@ -2,9 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import LanguageToggle from "./LanguageToggle";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 
 export default function Header() {
   const pathname = usePathname();
+  const { language, toggleLanguage } = useLanguageContext();
 
   return (
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-pink-100">
@@ -17,6 +20,7 @@ export default function Header() {
             </h1>
           </Link>
           <nav className="flex items-center gap-1">
+            <LanguageToggle language={language} onToggle={toggleLanguage} />
             <Link
               href="/"
               className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${

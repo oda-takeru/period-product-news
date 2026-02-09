@@ -3,11 +3,14 @@
 import Link from "next/link";
 import FavoriteButton from "./FavoriteButton";
 import { COUNTRIES, COUNTRY_FLAGS, CATEGORIES } from "@/lib/constants";
+import { useLanguageContext } from "@/contexts/LanguageContext";
 
 interface Article {
   id: string;
   title: string;
   summary: string;
+  titleJa?: string | null;
+  summaryJa?: string | null;
   url: string;
   imageUrl: string | null;
   country: string;
@@ -28,6 +31,14 @@ export default function ArticleCard({
   isFavorite,
   onToggleFavorite,
 }: ArticleCardProps) {
+  const { language } = useLanguageContext();
+  const displayTitle =
+    language === "ja" && article.titleJa ? article.titleJa : article.title;
+  const displaySummary =
+    language === "ja" && article.summaryJa
+      ? article.summaryJa
+      : article.summary;
+
   const date = new Date(article.publishedAt).toLocaleDateString("ja-JP", {
     year: "numeric",
     month: "short",
@@ -73,10 +84,10 @@ export default function ArticleCard({
         </div>
         <div className="p-4">
           <h3 className="font-bold text-gray-900 line-clamp-2 mb-2 group-hover:text-pink-600 transition-colors">
-            {article.title}
+            {displayTitle}
           </h3>
           <p className="text-sm text-gray-500 line-clamp-2 mb-3">
-            {article.summary}
+            {displaySummary}
           </p>
           <div className="flex items-center justify-between text-xs text-gray-400">
             <div className="flex items-center gap-2">
