@@ -24,26 +24,28 @@ export async function GET(request: NextRequest) {
     scraping: { count: 0, error: null },
   };
 
-  // NewsAPI で記事収集（失敗しても次に進む）
-  try {
-    console.log("=== NewsAPI 記事収集開始 ===");
-    results.newsapi.count = await collectFromNewsAPI();
+  // NewsAPI とスクレイピングを並列実行（タイムアウト対策）
+  console.log("=== 記事収集開始（並列実行）===");
+
+  const [newsapiResult, scrapingResult] = await Promise.allSettled([
+    collectFromNewsAPI(),
+    collectFromScraping(),
+  ]);
+
+  if (newsapiResult.status === "fulfilled") {
+    results.newsapi.count = newsapiResult.value;
     console.log(`NewsAPI: ${results.newsapi.count} 件取得`);
-  } catch (error) {
-    results.newsapi.error =
-      error instanceof Error ? error.message : String(error);
-    console.error("NewsAPI 収集エラー:", error);
+  } else {
+    results.newsapi.error = newsapiResult.reason?.message || String(newsapiResult.reason);
+    console.error("NewsAPI 収集エラー:", newsapiResult.reason);
   }
 
-  // スクレイピングで記事収集（失敗しても結果を返す）
-  try {
-    console.log("=== スクレイピング記事収集開始 ===");
-    results.scraping.count = await collectFromScraping();
+  if (scrapingResult.status === "fulfilled") {
+    results.scraping.count = scrapingResult.value;
     console.log(`スクレイピング: ${results.scraping.count} 件取得`);
-  } catch (error) {
-    results.scraping.error =
-      error instanceof Error ? error.message : String(error);
-    console.error("スクレイピング収集エラー:", error);
+  } else {
+    results.scraping.error = scrapingResult.reason?.message || String(scrapingResult.reason);
+    console.error("スクレイピング収集エラー:", scrapingResult.reason);
   }
 
   const duration = Date.now() - startTime;

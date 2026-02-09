@@ -95,7 +95,7 @@ export async function collectFromNewsAPI(): Promise<number> {
   };
 
   for (const [lang, countries] of Object.entries(LANG_COUNTRY_MAP)) {
-    for (const keyword of SEARCH_KEYWORDS.slice(0, 2)) {
+    for (const keyword of SEARCH_KEYWORDS.slice(0, 1)) {
       try {
         const response = await axios.get<NewsAPIResponse>(
           "https://newsapi.org/v2/everything",
@@ -104,7 +104,7 @@ export async function collectFromNewsAPI(): Promise<number> {
               q: keyword,
               language: lang,
               sortBy: "publishedAt",
-              pageSize: 10,
+              pageSize: 5,
               apiKey,
             },
             timeout: 10000,

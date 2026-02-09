@@ -42,17 +42,17 @@ export async function translateArticle(
   summary: string,
   content: string
 ): Promise<TranslationResult> {
+  // タイトルと要約のみ翻訳（本文はタイムアウト対策で省略、要約で十分）
   const titleJa = await translateText(title);
 
-  await new Promise((resolve) => setTimeout(resolve, 200));
+  await new Promise((resolve) => setTimeout(resolve, 100));
 
   const summaryJa = await translateText(summary);
 
-  await new Promise((resolve) => setTimeout(resolve, 200));
-
-  // 本文は2000文字に制限（翻訳API制限＋タイムアウト対策）
+  // 本文は500文字に制限して翻訳
+  await new Promise((resolve) => setTimeout(resolve, 100));
   const truncatedContent =
-    content.length > 2000 ? content.substring(0, 2000) + "..." : content;
+    content.length > 500 ? content.substring(0, 500) + "..." : content;
   const contentJa = await translateText(truncatedContent);
 
   return { titleJa, summaryJa, contentJa };
