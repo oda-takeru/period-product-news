@@ -18,19 +18,6 @@ interface NewsAPIResponse {
   articles: NewsAPIArticle[];
 }
 
-const COUNTRY_LANG_MAP: Record<string, string> = {
-  JP: "jp",
-  US: "us",
-  GB: "gb",
-  FR: "fr",
-  DE: "de",
-  SE: "se",
-  IN: "in",
-  KR: "kr",
-  AU: "au",
-  CA: "ca",
-};
-
 function detectBrandAndCompany(text: string): {
   brand: string | null;
   company: string | null;
@@ -97,19 +84,29 @@ export async function collectFromNewsAPI(): Promise<number> {
 
   let totalCollected = 0;
 
-  for (const [countryCode, langCode] of Object.entries(COUNTRY_LANG_MAP)) {
-    for (const keyword of SEARCH_KEYWORDS.slice(0, 3)) {
+  // NewsAPI /v2/everything は language パラメータのみ対応
+  // 言語ごとにまとめてリクエスト（日本語 + 英語）し、API呼び出し数を削減
+  const LANG_COUNTRY_MAP: Record<string, string[]> = {
+    ja: ["JP"],
+    en: ["US", "GB", "AU", "CA", "IN"],
+    fr: ["FR"],
+    de: ["DE"],
+  };
+
+  for (const [lang, countries] of Object.entries(LANG_COUNTRY_MAP)) {
+    for (const keyword of SEARCH_KEYWORDS.slice(0, 2)) {
       try {
         const response = await axios.get<NewsAPIResponse>(
           "https://newsapi.org/v2/everything",
           {
             params: {
               q: keyword,
-              language: langCode === "jp" ? "ja" : "en",
+              language: lang,
               sortBy: "publishedAt",
               pageSize: 10,
               apiKey,
             },
+            timeout: 10000,
           }
         );
 
@@ -122,6 +119,9 @@ export async function collectFromNewsAPI(): Promise<number> {
           const { brand, company } = detectBrandAndCompany(fullText);
           const category = detectCategory(fullText);
 
+          // 言語から代表国を割り当て
+          const country = countries[0];
+
           try {
             await prisma.article.upsert({
               where: { url: article.url },
@@ -132,7 +132,7 @@ export async function collectFromNewsAPI(): Promise<number> {
                 content: article.content || article.description || "",
                 url: article.url,
                 imageUrl: article.urlToImage,
-                country: countryCode,
+                country,
                 brand,
                 company,
                 category,
@@ -147,10 +147,10 @@ export async function collectFromNewsAPI(): Promise<number> {
         }
 
         // Rate limiting
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        await new Promise((resolve) => setTimeout(resolve, 500));
       } catch (error) {
         console.error(
-          `Error fetching news for ${countryCode}/${keyword}:`,
+          `Error fetching news for ${lang}/${keyword}:`,
           error
         );
       }
